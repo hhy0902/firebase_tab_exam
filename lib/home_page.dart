@@ -119,7 +119,6 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with TickerProviderStat
                   controller: tabController,
                   children: tabList.map((tabTitle) {
                     return Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         StreamBuilder<QuerySnapshot>(
                           stream: db
@@ -135,30 +134,31 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with TickerProviderStat
                               return const Center(child: Text("No data available."));
                             }
 
-                            final items = snapshot.data!.docs;
+                            final foodItems = snapshot.data!.docs;
 
                             return Expanded(
                               child: ListView.builder(
-                                itemCount: items.length,
+                                itemCount: foodItems.length,
                                 itemBuilder: (context, index) {
                                   return ListTile(
-                                    title: Text(items[index]["제품 명"]),
-                                    subtitle: Text(items[index]["가격"]),
+                                    title: Text(foodItems[index]["제품 명"]),
+                                    subtitle: Text("${foodItems[index]["가격"]}원"),
+                                    trailing: IconButton(
+                                      onPressed: () {
+                                        db.collection("category").doc(currentCategoryValue.value!.docs[currentTabIndex].id)
+                                            .collection("food").doc(foodItems[index].id).delete();
+
+                                        print(foodItems[index].id);
+                                        print(currentCategoryValue.value!.docs[currentTabIndex].id);
+
+                                      },
+                                      icon: Icon(Icons.delete),
+                                    ),
                                   );
                                 },
                               ),
                             );
                           },
-                        ),
-                        Center(
-                          child: Text('$tabTitle Tab'),
-                        ),
-                        IconButton(
-                          onPressed: () {
-                            print(tabTitle);
-
-                          },
-                          icon: const Icon(Icons.add),
                         ),
                       ],
                     );
@@ -172,9 +172,10 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with TickerProviderStat
       floatingActionButton: FloatingActionButton(
         onPressed: () {
 
-          final documentId = currentCategoryValue.value!.docs[tabController!.index].id;
+          final documentId = currentCategoryValue.value!.docs[currentTabIndex].id;
           print(currentCategoryValue.value!.docs[tabController!.index].id);
           print('현재 선택된 Tab: ${tabController!.index}');
+          print(currentTabIndex);
 
           showDialog(
             context: context,
