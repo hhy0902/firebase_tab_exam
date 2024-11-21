@@ -11,15 +11,24 @@ class MyHomePage extends ConsumerStatefulWidget {
   ConsumerState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends ConsumerState<MyHomePage> {
+class _MyHomePageState extends ConsumerState<MyHomePage> with TickerProviderStateMixin  {
   TextEditingController textController = TextEditingController();
   TextEditingController priceController = TextEditingController();
-  var db = FirebaseFirestore.instance;
+  TabController? tabController;
+  final db = FirebaseFirestore.instance;
+
+  @override
+  void dispose() {
+    tabController?.dispose();
+    textController.dispose();
+    priceController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final categoryAsyncValue = ref.watch(categoryProvider);
-    final tabIndexProvider = ref.watch(currentTabIndexProvider);
+    final currentCategoryValue = ref.watch(currentCategoryProvider);
+    final currentTabIndex = ref.watch(currentTabIndexProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -67,7 +76,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
                 },
               );
             },
-            child: Text("tap 추가"),
+            child: const Text("탭 추가"),
           ),
         ],
       ),
@@ -86,134 +95,139 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
             return doc["categoryName"] as String;
           }).toList();
 
-          final items = snapshot.data!.docs;
 
-          return DefaultTabController(
-            length: tabList.length,
-            key: ValueKey(tabList.length),
-            child: Column(
-              children: [
-                TabBar(
-                  tabs: tabList.map((tabTitle) => Tab(text: tabTitle)).toList(),
-                  isScrollable: true,
-                ),
-                Expanded(
-                  child: TabBarView(
-                    children: tabList.map((tabTitle) {
-                        return Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            StreamBuilder<QuerySnapshot>(
-                                stream: db
-                                    .collection("category")
-                                    .doc(items[tabList.indexOf(tabTitle)].id)
-                                    .collection("food")
-                                    .snapshots(),
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState ==
-                                      ConnectionState.waiting) {
-                                    return const Center(
-                                        child: CircularProgressIndicator());
-                                  }
-                                  if (!snapshot.hasData ||
-                                      snapshot.data!.docs.isEmpty) {
-                                    return const Center(
-                                        child: Text("No data available."));
-                                  }
+          if (tabController == null || tabController!.length != tabList.length) {
+            tabController?.dispose();
+            tabController = TabController(length: tabList.length, vsync: this)
+              ..addListener(() {
+                if (tabController!.indexIsChanging) {
+                  ref.read(currentTabIndexProvider.notifier).state = tabController!.index;
+                }
+              });
 
-                                  final items = snapshot.data!.docs;
+          }
 
-                                  return Expanded(
-                                    child: ListView.builder(
-                                        itemCount: items.length,
-                                        itemBuilder: (context, index) {
-                                          return ListTile(
-                                            title: Text(items[index]["제품 명"]),
-                                            subtitle: Text(items[index]["가격"]),
-                                          );
-                                        }),
+          return Column(
+            children: [
+              TabBar(
+                controller: tabController,
+                tabs: tabList.map((tabTitle) => Tab(text: tabTitle)).toList(),
+                isScrollable: true,
+              ),
+              Expanded(
+                child: TabBarView(
+                  controller: tabController,
+                  children: tabList.map((tabTitle) {
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        StreamBuilder<QuerySnapshot>(
+                          stream: db
+                              .collection("category")
+                              .doc(snapshot.data!.docs[tabList.indexOf(tabTitle)].id)
+                              .collection("food")
+                              .snapshots(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const Center(child: CircularProgressIndicator());
+                            }
+                            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                              return const Center(child: Text("No data available."));
+                            }
+
+                            final items = snapshot.data!.docs;
+
+                            return Expanded(
+                              child: ListView.builder(
+                                itemCount: items.length,
+                                itemBuilder: (context, index) {
+                                  return ListTile(
+                                    title: Text(items[index]["제품 명"]),
+                                    subtitle: Text(items[index]["가격"]),
                                   );
-                                }),
-                            Center(
-                              child: Text('$tabTitle Tab'),
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                print(items[tabList.indexOf(tabTitle)].id);
-                                print(tabTitle);
-                                showDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    return AlertDialog(
-                                      title: Text("음식 입력"),
-                                      content: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          TextField(
-                                            controller: textController,
-                                            autofocus: true,
-                                            decoration: InputDecoration(
-                                              labelText: "음식명",
-                                            ),
-                                          ),
-                                          TextField(
-                                            controller: priceController,
-                                            decoration: InputDecoration(
-                                              labelText: "가격",
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () {
-                                            setState(() {
-                                              db
-                                                  .collection("category")
-                                                  .doc(items[tabList
-                                                  .indexOf(tabTitle)]
-                                                  .id)
-                                                  .collection("food")
-                                                  .doc(textController.text)
-                                                  .set({
-                                                "제품 명": textController.text,
-                                                "가격": priceController.text,
-                                              });
-                                            });
-                                            textController.clear();
-                                            priceController.clear();
-                                            Navigator.pop(context);
-                                          },
-                                          child: Text("입력"),
-                                        ),
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                          },
-                                          child: Text("취소"),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                              },
-                              icon: Icon(Icons.add),
-                            ),
-                          ],
-                        );
-                      },
-                    ).toList(),
-                  ),
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                        Center(
+                          child: Text('$tabTitle Tab'),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            print(tabTitle);
+
+                          },
+                          icon: const Icon(Icons.add),
+                        ),
+                      ],
+                    );
+                  }).toList(),
                 ),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          print(categoryAsyncValue.value!.docs[0].id);
-          print(tabIndexProvider);
+
+          final documentId = currentCategoryValue.value!.docs[tabController!.index].id;
+          print(currentCategoryValue.value!.docs[tabController!.index].id);
+          print('현재 선택된 Tab: ${tabController!.index}');
+
+          showDialog(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                title: const Text("음식 입력"),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: textController,
+                      autofocus: true,
+                      decoration: const InputDecoration(
+                        labelText: "음식명",
+                      ),
+                    ),
+                    TextField(
+                      controller: priceController,
+                      decoration: const InputDecoration(
+                        labelText: "가격",
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      db
+                          .collection("category")
+                          .doc(documentId)
+                          .collection("food")
+                          .doc(textController.text)
+                          .set({
+                        "제품 명": textController.text,
+                        "가격": priceController.text,
+                      });
+                      textController.clear();
+                      priceController.clear();
+                      Navigator.pop(context);
+                    },
+                    child: const Text("입력"),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text("취소"),
+                  ),
+                ],
+              );
+            },
+          );
+
         },
         child: const Icon(Icons.add),
       ),
