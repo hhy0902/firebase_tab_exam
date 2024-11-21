@@ -11,33 +11,10 @@ class MyHomePage extends ConsumerStatefulWidget {
   ConsumerState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends ConsumerState<MyHomePage> with SingleTickerProviderStateMixin {
+class _MyHomePageState extends ConsumerState<MyHomePage> {
   TextEditingController textController = TextEditingController();
   TextEditingController priceController = TextEditingController();
   var db = FirebaseFirestore.instance;
-
-  late TabController tabController;
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    tabController = TabController(length: 0, vsync: this);
-    tabController.addListener(() {
-      if (tabController.indexIsChanging) {
-        // 탭이 변경되면 Riverpod 상태를 업데이트
-        ref.read(currentTabIndexProvider.notifier).state = tabController.index;
-      }
-    });
-
-  }
-
-  @override
-  void dispose() {
-    // TODO: implement dispose
-    super.dispose();
-    tabController.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,17 +94,12 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with SingleTickerProvid
             child: Column(
               children: [
                 TabBar(
-                  controller: tabController,
                   tabs: tabList.map((tabTitle) => Tab(text: tabTitle)).toList(),
                   isScrollable: true,
-                  onTap: (value) {
-                    ref.read(currentTabIndexProvider.notifier).state = value;
-                  },
                 ),
                 Expanded(
                   child: TabBarView(
-                    children: tabList.map(
-                      (tabTitle) {
+                    children: tabList.map((tabTitle) {
                         return Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -199,8 +171,8 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with SingleTickerProvid
                                               db
                                                   .collection("category")
                                                   .doc(items[tabList
-                                                          .indexOf(tabTitle)]
-                                                      .id)
+                                                  .indexOf(tabTitle)]
+                                                  .id)
                                                   .collection("food")
                                                   .doc(textController.text)
                                                   .set({
