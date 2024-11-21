@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "999684768651",
+    "project_id": "flutter-tabbar-exam",
+    "storage_bucket": "flutter-tabbar-exam.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:999684768651:android:aa229131a836c39a80658e",
+        "android_client_info": {
+          "package_name": "com.example.flutter_tabbar_exam"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA5JFKF4HtrGml2OSot-tjz8WlK51aOtrc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
