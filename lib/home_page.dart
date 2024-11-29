@@ -31,6 +31,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with TickerProviderStat
   Widget build(BuildContext context) {
     final currentCategoryValue = ref.watch(currentCategoryProvider);
     final currentTabIndex = ref.watch(currentTabIndexProvider);
+    final isDeleteTab = ref.watch(isDeleteTabProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -58,12 +59,28 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with TickerProviderStat
                 }
               });
           } else if (tabController!.length != tabs.length) {
-            final previousIndex = tabController!.index;
+            // final previousIndex = tabController!.index;
+            final previousIndex = currentTabIndex;
+            print("previousIndex: $previousIndex");
+            print("tabs.length: ${tabs.length}");
             tabController!.dispose();
             tabController = TabController(
               length: tabs.length,
               vsync: this,
-              initialIndex: (previousIndex < tabs.length) ? previousIndex : 0,
+              initialIndex: () {
+                // 이전 인덱스가 새 탭 범위 내에 있으면 그 인덱스 유지
+                if (previousIndex < tabs.length) {
+                  return previousIndex;
+                }
+                // 이전 인덱스가 범위를 벗어났다면 마지막 탭으로 설정
+                else if (tabs.length > 0) {
+                  return tabs.length - 1;
+                }
+                // 탭이 더 이상 없으면 0 반환 (필요에 따라 처리 가능)
+                else {
+                  return 0;
+                }
+              }(),
             )..addListener(() {
               if (tabController!.indexIsChanging) {
                 ref.read(currentTabIndexProvider.notifier).state = tabController!.index;
@@ -71,6 +88,9 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with TickerProviderStat
             });
           }
 
+
+          print("tabController!.length: ${tabController!.length}");
+          print("tabs.length2 : ${tabs.length}");
           print(tabController!.index);
           print(currentTabIndex);
 
@@ -78,7 +98,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with TickerProviderStat
             children: [
               TabBar(
                 controller: tabController,
-                tabs: tabs.map((tabTitle) => Tab(text: tabTitle["categoryName"])).toList(),
+                tabs: tabs.map((tabTitle) => Tab(text: tabTitle.id)).toList(),
                 isScrollable: true,
               ),
               Expanded(

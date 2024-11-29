@@ -8,10 +8,24 @@ final currentCategoryProvider = StreamProvider.autoDispose<QuerySnapshot>((ref) 
   return db.collection("category").orderBy("createdAt", descending: false).snapshots();
 });
 
-final currentTabIndexProvider = StateProvider<int>((ref) => 0);
+// final currentTabIndexProvider = StateProvider<int>((ref) => 0);
 
 
+final isDeleteTabProvider = StateProvider<bool>((ref) => false);
 
+
+final currentTabIndexProvider = StateNotifierProvider<CurrentTabIndexNotifier, int>((ref) {
+  return CurrentTabIndexNotifier();
+});
+
+class CurrentTabIndexNotifier extends StateNotifier<int> {
+  CurrentTabIndexNotifier() : super(0);
+
+  void updateIndex(int newIndex, int totalTabs) {
+    // 인덱스가 유효한 범위 내에 있는지 확인
+    state = newIndex < totalTabs ? newIndex : (totalTabs > 0 ? totalTabs - 1 : 0);
+  }
+}
 
 
 

@@ -40,7 +40,7 @@ class _FabSpeedDialState extends ConsumerState<FabSpeedDial> {
               context: context,
               builder: (context) {
                 return AlertDialog(
-                  title: const Text("음식 입력"),
+                  title: Text("${documentId} tap 음식 입력"),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -199,8 +199,17 @@ class _FabSpeedDialState extends ConsumerState<FabSpeedDial> {
         SpeedDialChild(
           child: const Icon(Icons.delete),
           label: '카테고리 삭제',
-          onTap: () async {
+          onTap: () {
+
+            final documentLength = currentCategoryValue.value!.docs.length;
+
+            if(documentLength == 0) {
+              return;
+            }
+
             final documentId = currentCategoryValue.value!.docs[currentTabIndex].id;
+            print("currentTabIndex : ${currentTabIndex}");
+            print("docs.length : ${currentCategoryValue.value!.docs.length}");
             print('Delete Item tapped');
             print(documentId);
 
@@ -215,7 +224,9 @@ class _FabSpeedDialState extends ConsumerState<FabSpeedDial> {
                       onPressed: () async {
                         // await db.collection("category").doc(currentCategoryValue.value!.docs[currentTabIndex].id).delete();
 
+
                         await db.collection("category").doc(documentId).collection("food").get().then((snapshot) {
+                          print("지우기 전 currentTabIndex : ${currentTabIndex}");
                           for (var doc in snapshot.docs) {
                             doc.reference.delete();
                           }
@@ -223,16 +234,26 @@ class _FabSpeedDialState extends ConsumerState<FabSpeedDial> {
 
                         await db.collection("category").doc(documentId).delete();
 
+
+                        // 업데이트된 탭 가져오기
+                        final updatedTabs = await db.collection("category").orderBy("createdAt").get();
+                        // 탭 인덱스 업데이트
+                        ref.read(currentTabIndexProvider.notifier).updateIndex(
+                            currentTabIndex,
+                            updatedTabs.docs.length
+                        );
+
                         // // 새 카테고리 목록 가져오기
                         // final newCategorySnapshot = await db.collection("category").orderBy("createdAt").get();
                         //
                         // // currentTabIndex 업데이트
                         // if (newCategorySnapshot.docs.isNotEmpty) {
                         //   // 삭제된 탭이 마지막 탭일 경우, 인덱스를 조정
-                        //   final newIndex = currentTabIndex >= newCategorySnapshot.docs.length
+                        //   final newIndex = await currentTabIndex >= newCategorySnapshot.docs.length
                         //       ? newCategorySnapshot.docs.length - 1
                         //       : currentTabIndex;
                         //   ref.read(currentTabIndexProvider.notifier).state = newIndex;
+                        //   print("currentTabIndex update : ${currentTabIndex}");
                         // } else {
                         //   // 모든 탭이 삭제된 경우
                         //   ref.read(currentTabIndexProvider.notifier).state = 0;
@@ -259,5 +280,4 @@ class _FabSpeedDialState extends ConsumerState<FabSpeedDial> {
     );
   }
 }
-
 
