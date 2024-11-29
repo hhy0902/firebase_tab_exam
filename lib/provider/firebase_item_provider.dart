@@ -10,10 +10,6 @@ final currentCategoryProvider = StreamProvider.autoDispose<QuerySnapshot>((ref) 
 
 // final currentTabIndexProvider = StateProvider<int>((ref) => 0);
 
-
-final isDeleteTabProvider = StateProvider<bool>((ref) => false);
-
-
 final currentTabIndexProvider = StateNotifierProvider<CurrentTabIndexNotifier, int>((ref) {
   return CurrentTabIndexNotifier();
 });

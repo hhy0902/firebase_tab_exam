@@ -31,9 +31,9 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with TickerProviderStat
   Widget build(BuildContext context) {
     final currentCategoryValue = ref.watch(currentCategoryProvider);
     final currentTabIndex = ref.watch(currentTabIndexProvider);
-    final isDeleteTab = ref.watch(isDeleteTabProvider);
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('TabBar Example'),
       ),

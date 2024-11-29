@@ -1,10 +1,13 @@
 
 
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutter_tabbar_exam/provider/firebase_item_provider.dart';
+import 'package:image_picker/image_picker.dart';
 
 class FabSpeedDial extends ConsumerStatefulWidget {
   const FabSpeedDial({super.key});
@@ -14,10 +17,35 @@ class FabSpeedDial extends ConsumerStatefulWidget {
 }
 
 class _FabSpeedDialState extends ConsumerState<FabSpeedDial> {
+  File? _image; // 선택한 이미지 파일 저장
+  final ImagePicker _picker = ImagePicker(); // ImagePicker 인스턴스 생성
 
   TextEditingController textController = TextEditingController();
   TextEditingController priceController = TextEditingController();
   final db = FirebaseFirestore.instance;
+
+
+  // 갤러리에서 이미지 선택
+  Future<void> _pickImageFromGallery() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path); // 이미지 파일 저장
+      });
+    }
+  }
+
+  // 카메라로 이미지 촬영
+  Future<void> _pickImageFromCamera() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.camera);
+
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path); // 이미지 파일 저장
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,23 +69,77 @@ class _FabSpeedDialState extends ConsumerState<FabSpeedDial> {
               builder: (context) {
                 return AlertDialog(
                   title: Text("${documentId} tap 음식 입력"),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(
-                        controller: textController,
-                        autofocus: true,
-                        decoration: const InputDecoration(
-                          labelText: "음식명",
+                  content: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextField(
+                          controller: textController,
+                          autofocus: true,
+                          decoration: const InputDecoration(
+                            labelText: "음식명",
+                          ),
                         ),
-                      ),
-                      TextField(
-                        controller: priceController,
-                        decoration: const InputDecoration(
-                          labelText: "가격",
+                        TextField(
+                          controller: priceController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: "가격",
+                          ),
                         ),
-                      ),
-                    ],
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (_image != null) // 선택된 이미지가 있으면 미리보기 표시
+                              Padding(
+                                padding: const EdgeInsets.only(right: 10),
+                                child: CircleAvatar(
+                                  radius: 40,
+                                  backgroundImage: FileImage(_image!),
+                                ),
+                              )
+                            else
+                              Padding(
+                                padding: const EdgeInsets.only(right: 10),
+                                child: CircleAvatar(
+                                  radius: 40,
+                                  child: Icon(Icons.photo, size: 30),
+                                ),
+                              ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    _pickImageFromCamera(); // 카메라로 사진 촬영
+                                  },
+                                  icon: Icon(Icons.camera_alt, size: 20),
+                                  label: Text("카메라"),
+                                  style: ElevatedButton.styleFrom(
+                                    elevation: 2,
+                                    backgroundColor: Colors.blue,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    _pickImageFromGallery(); // 갤러리에서 이미지 선택
+                                  },
+                                  icon: Icon(Icons.image_outlined, size: 20),
+                                  label: Text("갤러리"),
+                                  style: ElevatedButton.styleFrom(
+                                    elevation: 2,
+                                    backgroundColor: Colors.blue,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                   actions: [
                     TextButton(
@@ -101,6 +183,7 @@ class _FabSpeedDialState extends ConsumerState<FabSpeedDial> {
                           await docRef.set({
                             "제품 명": textController.text,
                             "가격": priceController.text,
+                            "이미지" : "",
                           });
 
                           textController.clear();
@@ -242,22 +325,6 @@ class _FabSpeedDialState extends ConsumerState<FabSpeedDial> {
                             currentTabIndex,
                             updatedTabs.docs.length
                         );
-
-                        // // 새 카테고리 목록 가져오기
-                        // final newCategorySnapshot = await db.collection("category").orderBy("createdAt").get();
-                        //
-                        // // currentTabIndex 업데이트
-                        // if (newCategorySnapshot.docs.isNotEmpty) {
-                        //   // 삭제된 탭이 마지막 탭일 경우, 인덱스를 조정
-                        //   final newIndex = await currentTabIndex >= newCategorySnapshot.docs.length
-                        //       ? newCategorySnapshot.docs.length - 1
-                        //       : currentTabIndex;
-                        //   ref.read(currentTabIndexProvider.notifier).state = newIndex;
-                        //   print("currentTabIndex update : ${currentTabIndex}");
-                        // } else {
-                        //   // 모든 탭이 삭제된 경우
-                        //   ref.read(currentTabIndexProvider.notifier).state = 0;
-                        // }
 
                         Navigator.pop(context);
                       },
