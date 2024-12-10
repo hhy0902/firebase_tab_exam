@@ -1,5 +1,7 @@
 
 
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,6 +11,9 @@ final currentCategoryProvider = StreamProvider.autoDispose<QuerySnapshot>((ref) 
 });
 
 // final currentTabIndexProvider = StateProvider<int>((ref) => 0);
+
+final selectedImageProvider = StateProvider<File?>((ref) => null);
+
 
 final currentTabIndexProvider = StateNotifierProvider<CurrentTabIndexNotifier, int>((ref) {
   return CurrentTabIndexNotifier();

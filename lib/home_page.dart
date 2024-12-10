@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutter_tabbar_exam/provider/firebase_item_provider.dart';
 import 'package:flutter_tabbar_exam/widget/fab_speed_dial.dart';
+import 'package:image_picker/image_picker.dart';
 
 class MyHomePage extends ConsumerStatefulWidget {
   const MyHomePage({super.key});
@@ -19,12 +22,26 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with TickerProviderStat
   TabController? tabController;
   final db = FirebaseFirestore.instance;
 
+  File? _image; // 선택한 이미지 파일 저장
+  final ImagePicker _picker = ImagePicker(); // ImagePicker 인스턴스 생성
+
   @override
   void dispose() {
     tabController?.dispose();
     textController.dispose();
     priceController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImageFromGallery() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path); // 이미지 파일 저장
+        print("gallery : ${_image!.path}");
+      });
+    }
   }
 
   @override
@@ -184,6 +201,25 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with TickerProviderStat
                   }).toList(),
                 ),
               ),
+              IconButton(
+                onPressed: () {
+                  _pickImageFromGallery();
+                },
+                icon: Icon(Icons.add),
+              ),
+              if (_image != null) // 선택된 이미지가 있으면 미리보기 표시
+                Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: Image.file(_image!, width: 80, height: 80, fit: BoxFit.cover),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: CircleAvatar(
+                    radius: 40,
+                    child: Icon(Icons.photo, size: 30),
+                  ),
+                ),
             ],
           );
         },

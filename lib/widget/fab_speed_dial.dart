@@ -32,6 +32,7 @@ class _FabSpeedDialState extends ConsumerState<FabSpeedDial> {
     if (pickedFile != null) {
       setState(() {
         _image = File(pickedFile.path); // 이미지 파일 저장
+        print("gallery : ${_image!.path}");
       });
     }
   }
@@ -67,144 +68,118 @@ class _FabSpeedDialState extends ConsumerState<FabSpeedDial> {
             showDialog(
               context: context,
               builder: (context) {
-                return AlertDialog(
-                  title: Text("${documentId} tap 음식 입력"),
-                  content: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextField(
-                          controller: textController,
-                          autofocus: true,
-                          decoration: const InputDecoration(
-                            labelText: "음식명",
-                          ),
-                        ),
-                        TextField(
-                          controller: priceController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: "가격",
-                          ),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                return StatefulBuilder(
+                  builder: (context, setState) {
+                    return AlertDialog(
+                      title: Text("${documentId} tap 음식 입력"),
+                      content: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (_image != null) // 선택된 이미지가 있으면 미리보기 표시
-                              Padding(
-                                padding: const EdgeInsets.only(right: 10),
-                                child: CircleAvatar(
-                                  radius: 40,
-                                  backgroundImage: FileImage(_image!),
-                                ),
-                              )
-                            else
-                              Padding(
-                                padding: const EdgeInsets.only(right: 10),
-                                child: CircleAvatar(
-                                  radius: 40,
-                                  child: Icon(Icons.photo, size: 30),
-                                ),
+                            TextField(
+                              controller: textController,
+                              autofocus: true,
+                              decoration: const InputDecoration(
+                                labelText: "음식명",
                               ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            ),
+                            TextField(
+                              controller: priceController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: "가격",
+                              ),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                ElevatedButton.icon(
-                                  onPressed: () {
-                                    _pickImageFromCamera(); // 카메라로 사진 촬영
-                                  },
-                                  icon: Icon(Icons.camera_alt, size: 20),
-                                  label: Text("카메라"),
-                                  style: ElevatedButton.styleFrom(
-                                    elevation: 2,
-                                    backgroundColor: Colors.blue,
-                                    foregroundColor: Colors.white,
+                                if (_image != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 10),
+                                    child: Image.file(
+                                      _image!,
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                else
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 10),
+                                    child: CircleAvatar(
+                                      radius: 40,
+                                      child: Icon(Icons.photo, size: 30),
+                                    ),
                                   ),
-                                ),
-                                SizedBox(height: 8),
-                                ElevatedButton.icon(
-                                  onPressed: () {
-                                    _pickImageFromGallery(); // 갤러리에서 이미지 선택
-                                  },
-                                  icon: Icon(Icons.image_outlined, size: 20),
-                                  label: Text("갤러리"),
-                                  style: ElevatedButton.styleFrom(
-                                    elevation: 2,
-                                    backgroundColor: Colors.blue,
-                                    foregroundColor: Colors.white,
-                                  ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    ElevatedButton.icon(
+                                      onPressed: () async {
+                                        final pickedFile = await _picker.pickImage(source: ImageSource.camera);
+                                        if (pickedFile != null) {
+                                          setState(() {
+                                            _image = File(pickedFile.path);
+                                          });
+                                        }
+                                      },
+                                      icon: Icon(Icons.camera_alt, size: 20),
+                                      label: Text("카메라"),
+                                      style: ElevatedButton.styleFrom(
+                                        elevation: 2,
+                                        backgroundColor: Colors.blue,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    ),
+                                    SizedBox(height: 8),
+                                    ElevatedButton.icon(
+                                      onPressed: () async {
+                                        final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+                                        if (pickedFile != null) {
+                                          setState(() {
+                                            _image = File(pickedFile.path);
+                                          });
+                                        }
+                                      },
+                                      icon: Icon(Icons.image_outlined, size: 20),
+                                      label: Text("갤러리"),
+                                      style: ElevatedButton.styleFrom(
+                                        elevation: 2,
+                                        backgroundColor: Colors.blue,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
                           ],
                         ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            textController.clear();
+                            priceController.clear();
+                            Navigator.pop(context);
+                          },
+                          child: const Text("취소"),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            textController.clear();
+                            priceController.clear();
+                            Navigator.pop(context);
+                          },
+                          child: const Text("입력"),
+                        ),
                       ],
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () async {
-                        if (textController.text.isEmpty ||
-                            priceController.text.isEmpty) {
-                          return;
-                        }
-
-                        final docRef = db
-                            .collection("category")
-                            .doc(documentId)
-                            .collection("food")
-                            .doc(textController.text);
-
-                        final docSnapshot = await docRef.get();
-                        print(docSnapshot.exists);
-
-                        if (docSnapshot.exists) {
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                title: const Text("Duplicate item"),
-                                content:
-                                const Text("This item already exists."),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      textController.clear();
-                                      priceController.clear();
-                                      Navigator.pop(context);
-                                    },
-                                    child: const Text("OK"),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        } else {
-                          await docRef.set({
-                            "제품 명": textController.text,
-                            "가격": priceController.text,
-                            "이미지" : "",
-                          });
-
-                          textController.clear();
-                          priceController.clear();
-                          Navigator.pop(context);
-                        }
-                      },
-                      child: const Text("입력"),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        textController.clear();
-                        priceController.clear();
-                        Navigator.pop(context);
-                      },
-                      child: const Text("취소"),
-                    ),
-                  ],
+                    );
+                  },
                 );
               },
             );
+
           },
         ),
         SpeedDialChild(
