@@ -158,12 +158,55 @@ class _FabSpeedDialState extends ConsumerState<FabSpeedDial> {
                       ),
                       actions: [
                         TextButton(
-                          onPressed: () {
-                            textController.clear();
-                            priceController.clear();
-                            Navigator.pop(context);
+                          onPressed: () async {
+                            if (textController.text.isEmpty ||
+                                priceController.text.isEmpty) {
+                              return;
+                            }
+
+                            final docRef = db
+                                .collection("category")
+                                .doc(documentId)
+                                .collection("food")
+                                .doc(textController.text);
+
+                            final docSnapshot = await docRef.get();
+                            print(docSnapshot.exists);
+
+                            if (docSnapshot.exists) {
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return AlertDialog(
+                                    title: const Text("Duplicate item"),
+                                    content:
+                                    const Text("This item already exists."),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          textController.clear();
+                                          priceController.clear();
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text("OK"),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            } else {
+                              await docRef.set({
+                                "제품 명": textController.text,
+                                "가격": priceController.text,
+                                "이미지" : "",
+                              });
+
+                              textController.clear();
+                              priceController.clear();
+                              Navigator.pop(context);
+                            }
                           },
-                          child: const Text("취소"),
+                          child: const Text("입력"),
                         ),
                         TextButton(
                           onPressed: () {
@@ -171,15 +214,14 @@ class _FabSpeedDialState extends ConsumerState<FabSpeedDial> {
                             priceController.clear();
                             Navigator.pop(context);
                           },
-                          child: const Text("입력"),
+                          child: const Text("취소"),
                         ),
                       ],
                     );
-                  },
+                  }
                 );
               },
             );
-
           },
         ),
         SpeedDialChild(
